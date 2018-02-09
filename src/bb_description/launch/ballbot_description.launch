@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- these are the arguments you can pass this launch file-->
+
+  <arg name="robot_name" default="ballbot" />
+  <arg name="ground_truth" default="False" />>
+  <arg name="imu_update_rate" default="100" />
+  <arg name="control_period" default="0.01" />
+
+  <!-- Load the URDF into the ROS Parameter Server -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find bb_description)/urdf/ballbot.xacro'
+    robot_name:=$(arg robot_name)
+    ground_truth:=$(arg ground_truth)
+    imu_update_rate:=$(arg imu_update_rate)
+    control_period:=$(arg control_period)"
+    />
+</launch>

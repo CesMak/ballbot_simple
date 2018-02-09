@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+   <gazebo reference="ball_link">
+      <gravity>1</gravity>
+      <maxVel>0.01</maxVel>
+      <minDepth>0</minDepth>
+      <mu1>1e+3</mu1>
+      <mu2>1e+3</mu2>
+      <fdir1>0 0 0</fdir1>
+      <kp>1e+15</kp>
+      <kd>1.0</kd>
+      <selfCollide>0</selfCollide>
+      <maxContacts>10</maxContacts>
+   </gazebo>
+
+
+<!-- p3d plugin (3D Position Interface for Ground Truth)
+     This is required only for rviz that the balllink tf is known! -->
+   <gazebo>
+      <plugin name="ground_truth" filename="libgazebo_ros_p3d.so">
+         <frameName>world</frameName>
+         <bodyName>ball_link</bodyName>
+         <topicName>/gazebo/$(arg ball_name)/odom</topicName>
+         <updateRate>110.0</updateRate>
+      </plugin>
+   </gazebo>
+
+
+</robot>
+

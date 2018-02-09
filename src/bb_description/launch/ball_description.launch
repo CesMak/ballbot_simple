@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- these are the arguments you can pass this launch file, for example with_arm:=true -->
+  <arg name="ball_name" default="ball" />
+  
+  <!-- Load the ball:-->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find bb_description)/urdf/ball.xacro'
+  ball_name:=$(arg ball_name)"/>
+
+</launch>

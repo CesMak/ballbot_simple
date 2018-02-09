@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+        xmlns:interface="http://ros.org/wiki/xacro"
+        xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+        xmlns:xacro="http://ros.org/wiki/xacro">
+
+   <!-- inits colors &PI -->
+   <xacro:include filename="$(find bb_description)/urdf/common_properties.xacro" />
+
+   <xacro:include filename="$(find bb_description)/urdf/ballbot.gazebo.xacro" />
+
+   <!-- wheel parameter:  -->
+   <xacro:property name="mass_wheel" value="0.275" />
+   <xacro:property name="d_inertia_wheel_xx" value="0.00021337" />    <!-- unit is kg m^2 diagonal inertia value for ixx -->
+   <xacro:property name="d_inertia_wheel_yy" value="0.00024847" />    <!-- unit is kg m^2 diagonal inertia value for iyy,izz -->
+   <xacro:property name="d_inertia_wheel_zz" value="0.00029553" />    <!-- unit is kg m^2 diagonal inertia value for iyy,izz -->
+
+   <!--motor values:-->
+   <xacro:property name="motor_max_effort" value="3.8" />
+   <xacro:property name="motor_max_velocity" value="4.0" />
+
+   <xacro:property name="wheel_joint_damping" value="0.01" />    <!-- 0.01 sollte: 0.5 -->
+   <xacro:property name="wheel_joint_friction" value="0.05" />     <!-- 0.05 sollte: 1.0 -->
+
+   <xacro:macro name="ballbot_simple_macro">
+
+      <link name="base_footprint" />
+
+      <joint name="body_joint" type="fixed">
+         <parent link="base_footprint" />
+         <child link="body_link" />
+         <!-- the height point is ballmiddle point to ball_link + diameter/2 -->
+         <origin xyz="0.0 0.0 0.3434" rpy="0.0 0.0 0.0" />
+      </joint>
+
+      <link name="body_link">
+         <visual>
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            <geometry>
+               <mesh filename="package://bb_description/meshes/base/body_bin.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+            <cast_shadows>1</cast_shadows>
+            <transparency>0</transparency>
+            <material name="light_black" />
+         </visual>
+         <inertial>
+            <origin xyz="0.0 0.0 0.0" /> <!-- important: here you can set the center of mass position! -->
+            <mass value="8.565" /> <!-- eig. 1.572 -->  <!-- eigentlich: ixx="0.1" ixy="0.001" ixz="0.002" iyy="0.099" iyz="0.00" izz="0.007" -->
+            <inertia ixx="0.212416" ixy="0.00" ixz="0.00" iyy="0.212416" iyz="0.00" izz="0.0430836" />
+         </inertial>
+         <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+               <mesh filename="package://bb_description/meshes/base/body_bin.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+         </collision>
+      </link>
+
+      <!-- macro for wheels and their joints: -->
+      <xacro:macro name="wheel_link_joint_macro" params="pos *joint_origin">
+         <joint name="wheel${pos}_joint" type="continuous">
+            <parent link="body_link" />
+            <child link="wheel${pos}_link" />
+            <xacro:insert_block name="joint_origin" />
+            <axis xyz="1 0 0" />
+            <limit effort="${motor_max_effort}" velocity="${motor_max_velocity}" />
+            <dynamics friction="${wheel_joint_friction}" damping="${wheel_joint_damping}" />
+         </joint>
+         <link name="wheel${pos}_link">
+            <visual>
+               <origin xyz="0 0 0" rpy="0 0 0" />
+               <geometry>
+                  <mesh filename="package://bb_description/meshes/wheels/wheel_bin.stl" scale="0.001 0.001 0.001" />
+               </geometry>
+               <cast_shadows>1</cast_shadows>
+               <transparency>0</transparency>
+               <material name="light_black" />
+            </visual>
+            <inertial>
+               <origin xyz="0.0 0.0 0.0" />
+               <mass value="${mass_wheel}" />
+               <inertia ixx="${d_inertia_wheel_xx}" ixy="0.0" ixz="0.0" iyy="${d_inertia_wheel_yy}" iyz="0.0" izz="${d_inertia_wheel_zz}" />
+            </inertial>
+            <collision>
+               <origin xyz="0 0 0" rpy="0 0 0" />
+               <geometry>
+                  <mesh filename="package://bb_description/meshes/wheels/wheel_bin.stl" scale="0.001 0.001 0.001" />
+               </geometry>
+            </collision>
+         </link>
+      </xacro:macro>
+
+      <!-- generate wheels -->
+      <!-- Bezug immer auf Basis Koordinaten System , Basis ändert sich nie!-->
+      <xacro:wheel_link_joint_macro pos="1">
+         <origin xyz="-0.1315 -0.0759 ${0.2817-0.3434}" rpy="0.9804 -0.3972 -1.5708" />
+      </xacro:wheel_link_joint_macro>
+
+      <xacro:wheel_link_joint_macro pos="2">
+         <origin xyz="0 0.1518 ${0.2817-0.3434}" rpy="2.1474 -0.4183 0.5584" />
+      </xacro:wheel_link_joint_macro>
+
+      <xacro:wheel_link_joint_macro pos="3">
+         <origin xyz="0.1315 -0.0759 ${0.2817-0.3434}" rpy="-2.1612 0.3972 1.5708" />
+      </xacro:wheel_link_joint_macro>
+
+
+      <!-- Ballbot Sensors-->
+      <!-- NOTE that the sensors are modeled weightless because the whole body contanins in it's inertias the weights of the sensors (camera, lds) -->
+      <joint name="imu_joint" type="fixed">
+         <parent link="body_link" />
+         <child link="imu_link" />
+         <origin xyz="0 0 0.4" rpy="0.0 0.0 0" />
+      </joint>
+
+      <link name="imu_link">
+         <inertial>
+            <origin xyz="0.0 0.0 0.0" />
+            <mass value="0.001" />
+            <inertia ixx="0.00000001" ixy="0.0" ixz="0.0" iyy="0.00000001" iyz="0.0" izz="0.00000001" />
+         </inertial>
+      </link>
+
+   </xacro:macro>
+</robot>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+   <xacro:arg name="motors_controller_type" default="EffortJointInterface" />
+   <xacro:arg name="imu_update_rate" default="100" />
+   <xacro:arg name="control_period" default="0.01" />
+   <xacro:arg name="ground_truth" default="True" />
+
+   <!-- controllers: -->
+   <gazebo>
+      <!--Plugin loads hardware interfaces and controller manager -->
+      <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+         <robotNamespace>/$(arg robot_name)/joints</robotNamespace>
+         <robotParam>/$(arg robot_name)/robot_description</robotParam>
+         <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+         <controlPeriod>$(arg control_period)</controlPeriod>
+         <!-- 100Hz means 0.01 control Period -->
+      </plugin>
+   </gazebo>
+
+
+   <!--   The <transmission> element is used to link actuators to joints
+          Without a transmission link there is no tf published!
+    -->
+   <transmission name="wheel1_joint_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="wheel1_joint">
+         <hardwareInterface>hardware_interface/$(arg motors_controller_type)</hardwareInterface>
+      </joint>
+      <actuator name="wheel1_joint_actuator">
+         <hardwareInterface>hardware_interface/$(arg motors_controller_type)</hardwareInterface>
+         <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+   </transmission>
+
+   <transmission name="wheel2_joint_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="wheel2_joint">
+         <hardwareInterface>hardware_interface/$(arg motors_controller_type)</hardwareInterface>
+      </joint>
+      <actuator name="wheel2_joint_actuator">
+         <hardwareInterface>hardware_interface/$(arg motors_controller_type)</hardwareInterface>
+         <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+   </transmission>
+
+   <transmission name="wheel3_joint_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="wheel3_joint">
+         <hardwareInterface>hardware_interface/$(arg motors_controller_type)</hardwareInterface>
+      </joint>
+      <actuator name="wheel3_joint_actuator">
+         <hardwareInterface>hardware_interface/$(arg motors_controller_type)</hardwareInterface>
+         <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+   </transmission>
+
+   <!-- p3d plugin (3D Position Interface for Ground Truth) -->
+   <xacro:if value="$(arg ground_truth)">
+      <gazebo>
+         <plugin name="ground_truth" filename="libgazebo_ros_p3d.so">
+            <frameName>world</frameName>
+            <bodyName>base_footprint</bodyName>
+            <topicName>/gazebo/$(arg robot_name)/odom</topicName>
+            <updateRate>10.0</updateRate> <!-- not sure why but if you set this value low ball is not so often jumping into the origin (in rviz) -->
+         </plugin>
+      </gazebo>
+   </xacro:if>
+
+
+   <gazebo reference="body_link">
+      <!-- shortforms:-->
+      <gravity>1</gravity>
+      <maxVel>0.01</maxVel>
+      <minDepth>0</minDepth>
+      <mu1>0.0</mu1>
+      <mu2>0.0</mu2>
+      <fdir1>0 0 0</fdir1>
+      <kp>1e+13</kp>
+      <kd>1.0</kd>
+      <selfCollide>0</selfCollide>
+      <maxContacts>10</maxContacts>
+      <laserRetro>0</laserRetro>
+      <material>Gazebo/DarkGrey</material>
+   </gazebo>
+
+<!-- do i need this for ground friction?! -->
+<gazebo reference="base_footprint">
+   <mu1>1e+3</mu1>
+   <mu2>1e+3</mu2>
+</gazebo>
+
+   <!-- main wheels:
+mu: Friction coefficients μ for the principal contact directions along the contact surface
+kp: Contact stiffness for rigid body contacts  (Steifigkeit)
+kd: Contact damping k_d for rigid body contacts
+mu of speichen_wheel actually does not matter cause it has no contact point!
+-->
+<xacro:macro name="wheel" params="pos">
+   <gazebo reference="wheel${pos}_link">
+      <mu1>0</mu1>
+      <mu2>0</mu2>
+      <kp>1e+13</kp>
+      <kd>1.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.1</maxVel>
+      <fdir1>1 0 0</fdir1>
+      <material>Gazebo/Grey</material>
+   </gazebo>
+</xacro:macro>
+
+<!-- generate wheels: -->
+<xacro:wheel pos="1" />
+<xacro:wheel pos="2" />
+<xacro:wheel pos="3" />
+
+   <!-- sensor links here! -->
+   <gazebo reference="imu_link">
+      <sensor name="imu" type="imu">
+         <imu />
+         <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+            <robotNamespace />
+            <frameName>imu_link</frameName>
+            <topicName>/$(arg robot_name)/sensor/imu</topicName>
+            <updateRateHZ>$(arg imu_update_rate)</updateRateHZ>
+            <gaussianNoise>0.00</gaussianNoise> <!-- was before: 0.001 -->
+            <xyzOffset>0.0 0.0 0.0</xyzOffset>
+            <rpyOffset>0.0 0.0 0.0</rpyOffset>
+         </plugin>
+      </sensor>
+   </gazebo>
+
+</robot>
